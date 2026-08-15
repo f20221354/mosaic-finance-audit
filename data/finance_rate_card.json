@@ -1,0 +1,137 @@
+{
+  "Delhivery Logistics": {
+    "Freight charges - Zone A": 20.16,
+    "Freight charges - Zone B": 271.8,
+    "Freight charges - Zone C": 373,
+    "COD handling": 146.39,
+    "RTO charges": 200.59,
+    "Fuel surcharge": 114.22,
+    "Surface transport": 488.42
+  },
+  "BlueDart Express": {
+    "Freight charges - Zone A": 265.91,
+    "Freight charges - Zone B": 274.62,
+    "Freight charges - Zone C": 143.41,
+    "COD handling": 71.4,
+    "RTO charges": 411.43,
+    "Fuel surcharge": 452.26,
+    "Surface transport": 236.97
+  },
+  "Ecom Express Services": {
+    "Freight charges - Zone A": 137.79,
+    "Freight charges - Zone B": 138.76,
+    "Freight charges - Zone C": 110.37,
+    "COD handling": 175.2,
+    "RTO charges": 69.66,
+    "Fuel surcharge": 407.54,
+    "Surface transport": 276.52
+  },
+  "Xpressbees Courier": {
+    "Freight charges - Zone A": 425.34,
+    "Freight charges - Zone B": 373.77,
+    "Freight charges - Zone C": 57.6,
+    "COD handling": 278.72,
+    "RTO charges": 82.88,
+    "Fuel surcharge": 434.01,
+    "Surface transport": 243.01
+  },
+  "Ashok Packaging Pvt Ltd": {
+    "Corrugated boxes 7x5x3": 146.87,
+    "Bubble wrap roll 50m": 140.5,
+    "Tape rolls pack of 6": 77.71,
+    "Custom printed boxes": 13.57,
+    "Shrink wrap rolls": 16.68,
+    "Air pillow packs": 298.12,
+    "Mailer bags 10x12": 275.48
+  },
+  "Sri Lakshmi Plastics": {
+    "Corrugated boxes 7x5x3": 237.89,
+    "Bubble wrap roll 50m": 175.54,
+    "Tape rolls pack of 6": 233.08,
+    "Custom printed boxes": 190.84,
+    "Shrink wrap rolls": 109.83,
+    "Air pillow packs": 118.93,
+    "Mailer bags 10x12": 87.46
+  },
+  "Naveen Corrugators": {
+    "Corrugated boxes 7x5x3": 112,
+    "Bubble wrap roll 50m": 195.87,
+    "Tape rolls pack of 6": 115.5,
+    "Custom printed boxes": 25.31,
+    "Shrink wrap rolls": 163.31,
+    "Air pillow packs": 55.73,
+    "Mailer bags 10x12": 141.61
+  },
+  "Sai Pharma Ingredients": {
+    "Biotin powder 99%": 1780.54,
+    "Minoxidil solution 5%": 1125.35,
+    "Ashwagandha KSM-66": 510.72,
+    "Zinc gluconate": 4935.33,
+    "Melatonin powder": 2821.22,
+    "Collagen peptides": 627.82,
+    "Hyaluronic acid": 4967.85
+  },
+  "Kaival Nutraceuticals": {
+    "Biotin powder 99%": 2281.9,
+    "Minoxidil solution 5%": 3567.51,
+    "Ashwagandha KSM-66": 1096.35,
+    "Zinc gluconate": 2809.77,
+    "Melatonin powder": 4978.06,
+    "Collagen peptides": 1111.82,
+    "Hyaluronic acid": 3484.46
+  },
+  "Primus Biotech": {
+    "Biotin powder 99%": 2117.04,
+    "Minoxidil solution 5%": 2307.05,
+    "Ashwagandha KSM-66": 3785.7,
+    "Zinc gluconate": 1054.73,
+    "Melatonin powder": 4091.75,
+    "Collagen peptides": 4069.27,
+    "Hyaluronic acid": 667.81
+  },
+  "Herb Valley Extracts": {
+    "Biotin powder 99%": 342.55,
+    "Minoxidil solution 5%": 843.06,
+    "Ashwagandha KSM-66": 3259.69,
+    "Zinc gluconate": 2025.6,
+    "Melatonin powder": 1397.07,
+    "Collagen peptides": 2632.28,
+    "Hyaluronic acid": 2701.56
+  },
+  "DigiBoost Media": {
+    "Meta ad spend": 9658.73,
+    "Google Ads management": 49261.96,
+    "Influencer campaign fee": 20686.59,
+    "Creative production": 39574.7,
+    "SEO services monthly": 16940.56,
+    "Email campaign setup": 34989.96,
+    "Video production": 46180.52
+  },
+  "PixelCraft Studios": {
+    "Meta ad spend": 25987.08,
+    "Google Ads management": 24837.06,
+    "Influencer campaign fee": 46464.33,
+    "Creative production": 26028.68,
+    "SEO services monthly": 48975.39,
+    "Email campaign setup": 19401.48,
+    "Video production": 40738.32
+  },
+  "Brandwise Digital": {
+    "Meta ad spend": 43948.26,
+    "Google Ads management": 38418.82,
+    "Influencer campaign fee": 30087.3,
+    "Creative production": 42204.67,
+    "SEO services monthly": 28905.15,
+    "Email campaign setup": 18832.66,
+    "Video production": 20455.11
+  },
+  "CloudNine Ads": {
+    "Meta ad spend": 19009.64,
+    "Google Ads management": 25095.82,
+    "Influencer campaign fee": 30504.51,
+    "Creative production": 34363.83,
+    "SEO services monthly": 7831.38,
+    "Email campaign setup": 27039.36,
+    "Video production": 25530.76
+  }
+}

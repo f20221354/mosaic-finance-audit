@@ -1,0 +1,17 @@
+{
+  "name": "mosaic-finance-audit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mosaic Wellness — Invoice Audit Intelligence Dashboard",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "audit": "python3 scripts/run_audit.py"
+  },
+  "dependencies": {
+    "next": "^14",
+    "react": "^18",
+    "react-dom": "^18"
+  }
+}

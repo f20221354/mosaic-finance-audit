@@ -1,4 +1,23 @@
+/* ============================================================
+   THEME TOKENS
+
+   :root holds the dark palette — it is the design's default and
+   the no-JS fallback. Light is declared under two scopes:
+
+     1. the prefers-color-scheme media query, for viewers who have
+        never touched the toggle (":where(:not([data-theme=dark]))"
+        keeps an explicit dark stamp winning over an OS light setting)
+     2. :root[data-theme="light"], for an explicit toggle choice
+
+   The category hues are re-stepped per mode rather than reused: the
+   dark steps are too light to hold 4.5:1 as text on a white card.
+   Both sets are validated for lightness band, chroma floor, CVD
+   separation, normal-vision separation, and contrast vs surface.
+   ============================================================ */
+
 :root {
+  color-scheme: dark;
+
   --bg: #0a0e17;
   --surface: #111827;
   --surface2: #1a2234;
@@ -14,6 +33,7 @@
   --red: #ef4444;
   --red2: #f87171;
   --red-bg: rgba(239, 68, 68, 0.1);
+  --red-border: rgba(239, 68, 68, 0.2);
   --orange: #f59e0b;
   --orange-bg: rgba(245, 158, 11, 0.1);
   --green: #22c55e;
@@ -22,6 +42,113 @@
   --purple-bg: rgba(168, 85, 247, 0.1);
   --cyan: #06b6d4;
   --cyan-bg: rgba(6, 182, 212, 0.1);
+
+  /* categorical series — validated set for the dark surface */
+  --cat-duplicate: #ef4444;
+  --cat-duplicate-bg: rgba(239, 68, 68, 0.1);
+  --cat-gst: #f59e0b;
+  --cat-gst-bg: rgba(245, 158, 11, 0.1);
+  --cat-calculation: #a855f7;
+  --cat-calculation-bg: rgba(168, 85, 247, 0.1);
+  --cat-surcharge: #06b6d4;
+  --cat-surcharge-bg: rgba(6, 182, 212, 0.1);
+  --cat-subtotal: #22c55e;
+  --cat-subtotal-bg: rgba(34, 197, 94, 0.1);
+
+  --backdrop: rgba(0, 0, 0, 0.5);
+  --shadow-panel: -8px 0 30px rgba(0, 0, 0, 0.4);
+  --flagged-border: rgba(239, 68, 68, 0.3);
+}
+
+/* --- light palette, shared by both scopes below --- */
+@media (prefers-color-scheme: light) {
+  :root:where(:not([data-theme='dark'])) {
+    color-scheme: light;
+
+    --bg: #f6f8fb;
+    --surface: #ffffff;
+    --surface2: #f1f5f9;
+    --surface3: #e2e8f0;
+    --border: #e2e8f0;
+    --border2: #cbd5e1;
+    --text: #0f172a;
+    --text2: #475569;
+    --text3: #64748b;
+    --accent: #2563eb;
+    --accent2: #1d4ed8;
+    --accent-bg: rgba(37, 99, 235, 0.08);
+    --red: #dc2626;
+    --red2: #b91c1c;
+    --red-bg: rgba(220, 38, 38, 0.08);
+    --red-border: rgba(220, 38, 38, 0.25);
+    --orange: #b45309;
+    --orange-bg: rgba(180, 83, 9, 0.08);
+    --green: #15803d;
+    --green-bg: rgba(21, 128, 61, 0.08);
+    --purple: #7e22ce;
+    --purple-bg: rgba(126, 34, 206, 0.08);
+    --cyan: #0e7490;
+    --cyan-bg: rgba(14, 116, 144, 0.08);
+
+    --cat-duplicate: #e11d48;
+    --cat-duplicate-bg: rgba(225, 29, 72, 0.1);
+    --cat-gst: #d97706;
+    --cat-gst-bg: rgba(217, 119, 6, 0.12);
+    --cat-calculation: #9333ea;
+    --cat-calculation-bg: rgba(147, 51, 234, 0.1);
+    --cat-surcharge: #0891b2;
+    --cat-surcharge-bg: rgba(8, 145, 178, 0.12);
+    --cat-subtotal: #16a34a;
+    --cat-subtotal-bg: rgba(22, 163, 74, 0.1);
+
+    --backdrop: rgba(15, 23, 42, 0.32);
+    --shadow-panel: -8px 0 30px rgba(15, 23, 42, 0.16);
+    --flagged-border: rgba(220, 38, 38, 0.35);
+  }
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f6f8fb;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --surface3: #e2e8f0;
+  --border: #e2e8f0;
+  --border2: #cbd5e1;
+  --text: #0f172a;
+  --text2: #475569;
+  --text3: #64748b;
+  --accent: #2563eb;
+  --accent2: #1d4ed8;
+  --accent-bg: rgba(37, 99, 235, 0.08);
+  --red: #dc2626;
+  --red2: #b91c1c;
+  --red-bg: rgba(220, 38, 38, 0.08);
+  --red-border: rgba(220, 38, 38, 0.25);
+  --orange: #b45309;
+  --orange-bg: rgba(180, 83, 9, 0.08);
+  --green: #15803d;
+  --green-bg: rgba(21, 128, 61, 0.08);
+  --purple: #7e22ce;
+  --purple-bg: rgba(126, 34, 206, 0.08);
+  --cyan: #0e7490;
+  --cyan-bg: rgba(14, 116, 144, 0.08);
+
+  --cat-duplicate: #e11d48;
+  --cat-duplicate-bg: rgba(225, 29, 72, 0.1);
+  --cat-gst: #d97706;
+  --cat-gst-bg: rgba(217, 119, 6, 0.12);
+  --cat-calculation: #9333ea;
+  --cat-calculation-bg: rgba(147, 51, 234, 0.1);
+  --cat-surcharge: #0891b2;
+  --cat-surcharge-bg: rgba(8, 145, 178, 0.12);
+  --cat-subtotal: #16a34a;
+  --cat-subtotal-bg: rgba(22, 163, 74, 0.1);
+
+  --backdrop: rgba(15, 23, 42, 0.32);
+  --shadow-panel: -8px 0 30px rgba(15, 23, 42, 0.16);
+  --flagged-border: rgba(220, 38, 38, 0.35);
 }
 
 * {
@@ -36,6 +163,7 @@ body {
   color: var(--text);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 .mono {
@@ -44,7 +172,7 @@ body {
 
 ::selection {
   background: var(--accent);
-  color: white;
+  color: #fff;
 }
 
 ::-webkit-scrollbar {
@@ -60,4 +188,66 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text3);
+}
+
+/* Theme toggle — icon swaps are driven by the data-theme stamp so the
+   correct glyph is painted before React hydrates, with no flash. */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.theme-toggle:hover {
+  background: var(--surface3);
+  border-color: var(--border2);
+  color: var(--text);
+}
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Both glyphs are rendered into the static HTML and CSS picks the live one, so
+   the button is correct on first paint and identical on server and client —
+   no hydration mismatch and no icon flicker. Sun = "switch to light". */
+.theme-toggle .to-dark {
+  display: none;
+}
+@media (prefers-color-scheme: light) {
+  :root:where(:not([data-theme='dark'])) .theme-toggle .to-light {
+    display: none;
+  }
+  :root:where(:not([data-theme='dark'])) .theme-toggle .to-dark {
+    display: inline;
+  }
+}
+:root[data-theme='light'] .theme-toggle .to-light {
+  display: none;
+}
+:root[data-theme='light'] .theme-toggle .to-dark {
+  display: inline;
+}
+:root[data-theme='dark'] .theme-toggle .to-light {
+  display: inline;
+}
+
+/* Respect users who ask for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

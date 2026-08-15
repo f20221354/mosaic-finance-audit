@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import invoicesRaw from '@/data/finance_invoices.json';
 import rateCardRaw from '@/data/finance_rate_card.json';
 import gstRefRaw from '@/data/finance_gst_reference.json';
@@ -114,8 +114,11 @@ function computeAudit() {
 const fmt = (n) => '₹' + Math.abs(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtN = (n) => n.toLocaleString('en-IN');
 
-const CAT_COLORS = { DUPLICATE: '#ef4444', GST: '#f59e0b', CALCULATION: '#a855f7', SURCHARGE: '#06b6d4', SUBTOTAL: '#22c55e' };
-const CAT_BG = { DUPLICATE: 'rgba(239,68,68,0.1)', GST: 'rgba(245,158,11,0.1)', CALCULATION: 'rgba(168,85,247,0.1)', SURCHARGE: 'rgba(6,182,212,0.1)', SUBTOTAL: 'rgba(34,197,94,0.1)' };
+// Category hues resolve through CSS custom properties so each theme gets its own
+// validated step — the dark values are too light to hold contrast as text on a
+// white card. See the token block in globals.css.
+const CAT_COLORS = { DUPLICATE: 'var(--cat-duplicate)', GST: 'var(--cat-gst)', CALCULATION: 'var(--cat-calculation)', SURCHARGE: 'var(--cat-surcharge)', SUBTOTAL: 'var(--cat-subtotal)' };
+const CAT_BG = { DUPLICATE: 'var(--cat-duplicate-bg)', GST: 'var(--cat-gst-bg)', CALCULATION: 'var(--cat-calculation-bg)', SURCHARGE: 'var(--cat-surcharge-bg)', SUBTOTAL: 'var(--cat-subtotal-bg)' };
 const CAT_LABELS = { DUPLICATE: 'Duplicate Billing', GST: 'GST Mismatch', CALCULATION: 'Calculation Error', SURCHARGE: 'Uncontracted Charge', SUBTOTAL: 'Subtotal Mismatch' };
 const CAT_ORDER = ['DUPLICATE', 'GST', 'CALCULATION', 'SURCHARGE', 'SUBTOTAL'];
 
@@ -125,7 +128,7 @@ const S = {
   header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0 24px', borderBottom: '1px solid var(--border)', marginBottom: 28, flexWrap: 'wrap', gap: 12 },
   logoBox: { display: 'flex', alignItems: 'center', gap: 12 },
   logoMark: { width: 36, height: 36, background: 'linear-gradient(135deg, var(--accent), var(--purple))', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, color: '#fff' },
-  totalBadge: { background: 'var(--red-bg)', border: '1px solid rgba(239,68,68,0.2)', padding: '8px 16px', borderRadius: 8, textAlign: 'right' },
+  totalBadge: { background: 'var(--red-bg)', border: '1px solid var(--red-border)', padding: '8px 16px', borderRadius: 8, textAlign: 'right' },
   kpiRow: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 28 },
   kpi: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 20 },
   catGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 28 },
@@ -134,8 +137,8 @@ const S = {
   th: { padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--border)', background: 'var(--surface2)', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' },
   td: { padding: '10px 16px', fontSize: 13, whiteSpace: 'nowrap' },
   tag: (bg, color) => ({ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: bg, color, marginRight: 4 }),
-  overlay: (open) => ({ position: 'fixed', top: 0, right: 0, bottom: 0, width: 580, maxWidth: '100vw', background: 'var(--surface)', borderLeft: '1px solid var(--border)', zIndex: 100, overflowY: 'auto', transform: open ? 'translateX(0)' : 'translateX(100%)', transition: 'transform 0.25s ease', boxShadow: '-8px 0 30px rgba(0,0,0,0.4)' }),
-  backdrop: (open) => ({ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99, opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none', transition: 'opacity 0.2s' }),
+  overlay: (open) => ({ position: 'fixed', top: 0, right: 0, bottom: 0, width: 580, maxWidth: '100vw', background: 'var(--surface)', borderLeft: '1px solid var(--border)', zIndex: 100, overflowY: 'auto', transform: open ? 'translateX(0)' : 'translateX(100%)', transition: 'transform 0.25s ease', boxShadow: 'var(--shadow-panel)' }),
+  backdrop: (open) => ({ position: 'fixed', inset: 0, background: 'var(--backdrop)', zIndex: 99, opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none', transition: 'opacity 0.2s' }),
   btn: { padding: '8px 16px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500, fontFamily: 'inherit' },
   filterBtn: (active) => ({ padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`, background: active ? 'var(--accent)' : 'var(--surface2)', color: active ? '#fff' : 'var(--text2)', transition: 'all 0.15s' }),
   searchBox: { background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, padding: '7px 12px', color: 'var(--text)', fontSize: 13, width: 240, outline: 'none', fontFamily: 'inherit' },
@@ -152,6 +155,25 @@ export default function Dashboard() {
   const [page, setPage] = useState(1);
   const [detailId, setDetailId] = useState(null);
   const perPage = 25;
+
+  // Theme is read from the DOM after mount rather than during render: the
+  // pre-paint script in layout.js is the source of truth, and touching
+  // localStorage during render would desync the prerendered static HTML.
+  const [theme, setTheme] = useState(null);
+  useEffect(() => {
+    setTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
+  }, []);
+
+  // Read the live attribute rather than React state: the pre-paint script owns
+  // data-theme, so the DOM is authoritative even if a click lands before the
+  // mount effect has synced state.
+  const toggleTheme = useCallback(() => {
+    const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    const next = current === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('mosaic-theme', next); } catch (e) { /* storage unavailable */ }
+    setTheme(next);
+  }, []);
 
   const { summary: sum, findings, invoices, duplicatePairs } = data;
   const cats = sum.categories;
@@ -219,6 +241,17 @@ export default function Dashboard() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="theme-toggle"
+            aria-label="Toggle between light and dark theme"
+            aria-pressed={theme === 'light'}
+            title="Toggle light / dark theme"
+          >
+            <span className="to-light" aria-hidden="true">☀</span>
+            <span className="to-dark" aria-hidden="true">☾</span>
+          </button>
           <button onClick={exportCSV} style={{ ...S.btn, background: 'var(--accent)', color: '#fff' }}>↓ Export CSV</button>
           <div style={S.totalBadge}>
             <div style={{ fontSize: 11, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>Total Recoverable</div>
@@ -387,7 +420,7 @@ export default function Dashboard() {
                   ))}
                 </div>
                 {detailInv.dupOf && (
-                  <div style={{ background: 'var(--red-bg)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, padding: '10px 14px', marginTop: 12, fontSize: 13 }}>
+                  <div style={{ background: 'var(--red-bg)', border: '1px solid var(--red-border)', borderRadius: 6, padding: '10px 14px', marginTop: 12, fontSize: 13 }}>
                     <strong style={{ color: 'var(--red)' }}>⚠ Duplicate Invoice</strong><br />
                     <span style={{ color: 'var(--text2)' }}>This is a duplicate of <strong>{detailInv.dupOf}</strong>. Line-level impacts are suppressed; full gross total is recoverable.</span>
                   </div>
@@ -426,7 +459,7 @@ export default function Dashboard() {
                 {detailInv.lines.map((li, idx) => {
                   const hasIssue = detailFindings.some(f => f.lineDesc === li.description && f.financialImpact > 0);
                   return (
-                    <div key={idx} style={{ background: 'var(--surface2)', border: `1px solid ${hasIssue ? 'rgba(239,68,68,0.3)' : 'var(--border)'}`, borderRadius: 6, padding: 12, marginBottom: 8, fontSize: 13 }}>
+                    <div key={idx} style={{ background: 'var(--surface2)', border: `1px solid ${hasIssue ? 'var(--flagged-border)' : 'var(--border)'}`, borderRadius: 6, padding: 12, marginBottom: 8, fontSize: 13 }}>
                       <div style={{ fontWeight: 600, marginBottom: 6 }}>
                         {li.description} {hasIssue && <span style={S.tag('var(--red-bg)', 'var(--red)')}>FLAGGED</span>}
                       </div>

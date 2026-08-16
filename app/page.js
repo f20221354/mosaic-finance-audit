@@ -167,15 +167,19 @@ const VENDOR_TYPES = (() => {
 const HSN_CODES = Object.keys(gstRefRaw);
 const CUSTOM_DESC = '__custom__';
 
+// asc / desc are spelled out per column rather than as a generic
+// "Ascending / Descending": "Z → A" and "Highest first" say what the click
+// will actually do, which a bare direction word does not.
 const SORT_COLUMNS = [
-  { key: 'id', label: 'Invoice ID', align: 'left', defaultDir: 1 },
-  { key: 'vendor', label: 'Vendor', align: 'left', defaultDir: 1 },
-  { key: 'date', label: 'Date', align: 'left', defaultDir: -1 },
-  { key: 'issues', label: 'Issues', align: 'left', defaultDir: -1 },
-  { key: 'total', label: 'Billed', align: 'right', defaultDir: -1 },
-  { key: 'impact', label: 'Recovery', align: 'right', defaultDir: -1 },
-  { key: 'pct', label: 'Recovery %', align: 'right', defaultDir: -1 },
+  { key: 'id', label: 'Invoice ID', align: 'left', defaultDir: 1, asc: 'A → Z', desc: 'Z → A' },
+  { key: 'vendor', label: 'Vendor', align: 'left', defaultDir: 1, asc: 'A → Z', desc: 'Z → A' },
+  { key: 'date', label: 'Date', align: 'left', defaultDir: -1, asc: 'Oldest first', desc: 'Newest first' },
+  { key: 'issues', label: 'Issues', align: 'left', defaultDir: -1, asc: 'Fewest issues', desc: 'Most issues' },
+  { key: 'total', label: 'Billed', align: 'right', defaultDir: -1, asc: 'Lowest first', desc: 'Highest first' },
+  { key: 'impact', label: 'Recovery', align: 'right', defaultDir: -1, asc: 'Lowest first', desc: 'Highest first' },
+  { key: 'pct', label: 'Recovery %', align: 'right', defaultDir: -1, asc: 'Lowest first', desc: 'Highest first' },
 ];
+const dirLabel = (col, dir) => (dir > 0 ? col.asc : col.desc);
 
 const sortVal = (inv, key) => {
   if (key === 'date') return new Date(inv.date).getTime();
@@ -330,6 +334,16 @@ export default function Dashboard() {
     });
     setPage(1);
   }, []);
+
+  // The explicit Sort control and the header clicks drive the same two pieces
+  // of state, so the two stay in lockstep whichever one the user reaches for.
+  const selectSortKey = useCallback((key) => {
+    setSortKey(key);
+    setSortDir(SORT_COLUMNS.find(c => c.key === key)?.defaultDir ?? -1);
+    setPage(1);
+  }, []);
+
+  const toggleSortDir = useCallback(() => { setSortDir(d => d * -1); setPage(1); }, []);
 
   const toggleCat = useCallback((c) => {
     setCatFilters(prev => (c === null ? [] : prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]));
@@ -498,6 +512,7 @@ export default function Dashboard() {
     if (editingId && editingId !== id) setDetailId(null);
   }, [form, editingId, workingInvoices, shownSubtotal, shownGst, shownTotal, userEmail]);
 
+  const activeCol = SORT_COLUMNS.find(c => c.key === sortKey) || SORT_COLUMNS[0];
   const vendorLabel = vendorFilters.length === 0 ? 'All Vendors' : vendorFilters.length === 1 ? vendorFilters[0] : `${vendorFilters.length} vendors selected`;
   const vendorOptions = vendorQuery ? allVendors.filter(v => v.toLowerCase().includes(vendorQuery.toLowerCase())) : allVendors;
 
@@ -723,6 +738,30 @@ export default function Dashboard() {
             )}
           </div>
 
+          <span style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 4px' }} />
+
+          {/* Explicit sort control — mirrors the clickable column headers for
+              anyone who does not think to click them. */}
+          <label htmlFor="sort-key" style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 500 }}>Sort</label>
+          <select
+            id="sort-key"
+            value={sortKey}
+            onChange={e => selectSortKey(e.target.value)}
+            style={{ ...S.searchBox, width: 'auto', padding: '5px 8px', fontSize: 12, cursor: 'pointer' }}
+          >
+            {SORT_COLUMNS.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+          </select>
+          <button
+            type="button"
+            onClick={toggleSortDir}
+            title={`Currently ${dirLabel(activeCol, sortDir)} — click to reverse`}
+            aria-label={`Sort direction: ${dirLabel(activeCol, sortDir)}. Click to reverse.`}
+            style={{ ...S.filterBtn(false), display: 'inline-flex', alignItems: 'center', gap: 6 }}
+          >
+            <span className="mono" aria-hidden="true" style={{ color: 'var(--accent)', fontWeight: 700 }}>{sortDir > 0 ? '↑' : '↓'}</span>
+            {dirLabel(activeCol, sortDir)}
+          </button>
+
           {(catFilters.length > 0 || vendorFilters.length > 0 || search) && (
             <button
               type="button"
@@ -736,17 +775,26 @@ export default function Dashboard() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                {SORT_COLUMNS.map(col => (
-                  <th
-                    key={col.key}
-                    style={{ ...S.th, textAlign: col.align, color: sortKey === col.key ? 'var(--accent)' : 'var(--text3)' }}
-                    onClick={() => handleSort(col.key)}
-                    title={`Sort by ${col.label}`}
-                    aria-sort={sortKey === col.key ? (sortDir > 0 ? 'ascending' : 'descending') : 'none'}
-                  >
-                    {col.label} <span aria-hidden="true">{sortKey === col.key ? (sortDir > 0 ? '↑' : '↓') : '↕'}</span>
-                  </th>
-                ))}
+                {SORT_COLUMNS.map(col => {
+                  const active = sortKey === col.key;
+                  // Headers are focusable buttons in all but name: the hover and
+                  // focus affordances live in globals.css so the muted "↕" reads
+                  // as a control before the first click, not after it.
+                  return (
+                    <th
+                      key={col.key}
+                      className={`sort-th${active ? ' is-active' : ''}`}
+                      style={{ ...S.th, textAlign: col.align, color: active ? 'var(--accent)' : 'var(--text2)' }}
+                      onClick={() => handleSort(col.key)}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort(col.key); } }}
+                      tabIndex={0}
+                      title={active ? `${col.label}: ${dirLabel(col, sortDir)} — click to reverse` : `Sort by ${col.label} (${dirLabel(col, col.defaultDir)})`}
+                      aria-sort={active ? (sortDir > 0 ? 'ascending' : 'descending') : 'none'}
+                    >
+                      {col.label} <span className="sort-ind" aria-hidden="true">{active ? (sortDir > 0 ? '↑' : '↓') : '↕'}</span>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>

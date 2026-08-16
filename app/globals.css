@@ -244,6 +244,50 @@ body {
   display: inline;
 }
 
+/* Sortable table headers.
+
+   The sort affordance has to be legible BEFORE the first click, so the
+   inactive "↕" sits at 0.55 opacity rather than being dimmed into the
+   background, and hover lifts both the header and the indicator. Without
+   this the header reads as a plain label and the feature goes unfound. */
+.sort-th {
+  position: relative;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+/* !important is load-bearing here, not sloppiness: the base th colours are
+   inline styles from the component's style object, which outrank a plain
+   class rule. */
+.sort-th:hover {
+  background: var(--surface3) !important;
+  color: var(--text) !important;
+}
+.sort-th:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.sort-th .sort-ind {
+  display: inline-block;
+  margin-left: 2px;
+  opacity: 0.55;
+  transition: opacity 0.12s ease;
+}
+.sort-th:hover .sort-ind,
+.sort-th:focus-visible .sort-ind,
+.sort-th.is-active .sort-ind {
+  opacity: 1;
+}
+/* The active column keeps an accent underline so the sorted axis is
+   identifiable at a glance, not only by the arrow glyph. */
+.sort-th.is-active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+}
+
 /* Respect users who ask for less motion. */
 @media (prefers-reduced-motion: reduce) {
   * {

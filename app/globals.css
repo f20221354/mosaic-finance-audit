@@ -288,6 +288,377 @@ body {
   background: var(--accent);
 }
 
+/* ============================================================
+   RESPONSIVE LAYOUT
+
+   The dashboard is built from inline style objects, which cannot
+   express media queries — so every property that has to change with
+   viewport width lives here instead, addressed by class name.
+
+   Several rules need !important: the component still sets base
+   colours, padding and alignment inline for the desktop case, and an
+   inline declaration outranks any plain class rule. Where you see it
+   below, it is overriding a known inline value, not guessing.
+
+   Breakpoints
+     1024px — the chart / summary split stacks
+      860px — header and explorer toolbar go vertical
+      640px — phone: table becomes cards, forms go single column
+   ============================================================ */
+
+.dash {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.dash-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px 0 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 28px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+/* Chart on the left, audit summary in a fixed rail on the right. */
+.split {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+/* Vendor leakage bar: name | track | amount. The name and amount are
+   fixed-width so every track starts and ends on the same axis. */
+.vbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 6px;
+  padding: 2px 4px;
+  border: none;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 12px;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.vbar-name {
+  width: 170px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vbar-track {
+  flex: 1 1 auto;
+  min-width: 40px;
+  height: 22px;
+  background: var(--surface2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.vbar-amt {
+  width: 180px;
+  flex: 0 0 auto;
+  text-align: right;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.explorer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.search-wrap {
+  position: relative;
+}
+.search-box {
+  width: 240px;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Keep the panel's Edit / Close labels on one line — a long vendor name in the
+   sticky header would otherwise squeeze them into two-line buttons. */
+.panel-actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.panel-actions button {
+  white-space: nowrap;
+}
+.finding-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.line-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.line-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+/* ---------- 1024px: the right-hand rail has no room left ---------- */
+@media (max-width: 1024px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- 860px: toolbars go vertical ---------- */
+@media (max-width: 860px) {
+  .dash-header {
+    flex-direction: column;
+    align-items: stretch;
+    padding-bottom: 18px;
+    margin-bottom: 20px;
+  }
+  .header-actions {
+    justify-content: flex-start;
+  }
+  /* The recoverable-total badge is the headline number — give it the
+     full row instead of letting it wrap into a ragged gap. */
+  .header-actions .total-badge {
+    flex: 1 1 100%;
+    text-align: left !important;
+  }
+  /* auto-fit would tile the four KPIs as 3 + 1, leaving an orphan gap on the
+     second row. A fixed 2×2 uses the same space with no hole. */
+  .kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .explorer-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .search-wrap {
+    width: 100%;
+  }
+  .search-box {
+    width: 100%;
+  }
+  .drop {
+    width: min(360px, calc(100vw - 48px)) !important;
+  }
+  .search-wrap .drop {
+    width: 100% !important;
+  }
+}
+
+/* ---------- 640px: phone ---------- */
+@media (max-width: 640px) {
+  .dash {
+    padding: 12px;
+  }
+
+  /* Two short KPI tiles read better than four tall stacked ones. */
+  .kpi-row {
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .kpi-row > div {
+    padding: 14px !important;
+  }
+  .kpi-row > div > div:nth-child(2) {
+    font-size: 22px !important;
+  }
+
+  .cat-grid {
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  /* Name above, track and amount below — reclaims the 350px that the
+     two fixed cells were taking out of a 390px screen. */
+  .vbar {
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    padding: 6px 4px;
+  }
+  .vbar-name {
+    width: 100%;
+    flex: 1 1 100%;
+    font-weight: 600;
+  }
+  .vbar-amt {
+    width: auto;
+    flex: 0 0 auto;
+    font-size: 11px;
+  }
+
+  .filter-bar {
+    padding: 10px 12px;
+  }
+  /* Vertical rules between filter groups make no sense once the bar wraps. */
+  .filter-bar .bar-sep {
+    display: none;
+  }
+  .explorer-head {
+    padding: 12px;
+  }
+  .pager {
+    padding: 12px;
+    justify-content: center;
+  }
+
+  .form-grid-3,
+  .line-grid-2,
+  .line-grid-3,
+  .finding-grid {
+    grid-template-columns: 1fr;
+  }
+  .detail-panel {
+    width: 100% !important;
+    border-left: none !important;
+  }
+  .modal-wrap {
+    padding: 10px !important;
+  }
+  .toast-card {
+    left: 12px !important;
+    right: 12px !important;
+    bottom: 12px !important;
+    max-width: none !important;
+  }
+
+  /* ---- table becomes a list of cards ----
+     Seven nowrap columns cannot be read on a phone even with a scroll
+     container, so each row is relabelled as a stacked card. thead and
+     tfoot are hidden: the header is redundant once every cell carries
+     its own label, and the totals sentence below the table already
+     states what the tfoot row showed. */
+  .data-table,
+  .data-table tbody,
+  .data-table tr,
+  .data-table td {
+    display: block;
+    width: 100%;
+  }
+  .data-table thead,
+  .data-table tfoot {
+    display: none;
+  }
+  .data-table tr {
+    border: 1px solid var(--border) !important;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    padding: 4px 0;
+    background: var(--surface);
+  }
+  .data-table td {
+    display: flex !important;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 12px !important;
+    white-space: normal !important;
+    text-align: right !important;
+  }
+  .data-table td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    color: var(--text3);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: left;
+  }
+  /* The ID leads the card, so it gets its own full-width line. */
+  .data-table td[data-label='Invoice ID'] {
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+    padding-bottom: 8px !important;
+  }
+  .data-table td[data-label='Issues'] {
+    flex-wrap: wrap;
+  }
+  .data-table td.empty-cell {
+    display: block !important;
+    text-align: center !important;
+  }
+  .data-table td.empty-cell::before {
+    content: none;
+  }
+  .totals-strip {
+    padding: 12px !important;
+    line-height: 1.7;
+  }
+}
+
 /* Respect users who ask for less motion. */
 @media (prefers-reduced-motion: reduce) {
   * {

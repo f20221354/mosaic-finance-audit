@@ -191,15 +191,18 @@ const blankLine = () => ({ description: '', customDesc: '', quantity: '', unit_p
 const blankForm = () => ({ invoice_id: '', vendor_name: '', invoice_date: '', lines: [blankLine()], subtotal: '', subtotalTouched: false, gst_amount: '', gstTouched: false, total: '', totalTouched: false });
 
 // ====== STYLES ======
+// Layout that has to change with viewport width lives in globals.css under a
+// class name — inline styles cannot express a media query, and an inline
+// declaration would win over the responsive rule anyway. Anything left in this
+// object is either viewport-independent or a value computed from state.
+// Class-driven layout: .dash .dash-header .header-actions .kpi-row .cat-grid
+// .split .vbar .explorer-head .filter-bar .pager .detail-grid .finding-grid
+// .form-grid-3 .line-grid-2 .line-grid-3 .data-table
 const S = {
-  app: { maxWidth: 1360, margin: '0 auto', padding: 20 },
-  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0 24px', borderBottom: '1px solid var(--border)', marginBottom: 28, flexWrap: 'wrap', gap: 12 },
   logoBox: { display: 'flex', alignItems: 'center', gap: 12 },
-  logoMark: { width: 36, height: 36, background: 'linear-gradient(135deg, var(--accent), var(--purple))', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, color: '#fff' },
+  logoMark: { width: 36, height: 36, background: 'linear-gradient(135deg, var(--accent), var(--purple))', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, color: '#fff', flex: '0 0 auto' },
   totalBadge: { background: 'var(--red-bg)', border: '1px solid var(--red-border)', padding: '8px 16px', borderRadius: 8, textAlign: 'right' },
-  kpiRow: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 28 },
   kpi: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 20 },
-  catGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 28 },
   catCard: (active) => ({ background: 'var(--surface)', border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 10, padding: 16, cursor: 'pointer', transition: 'all 0.15s', position: 'relative', overflow: 'hidden', boxShadow: active ? '0 0 0 1px var(--accent)' : 'none' }),
   tableWrap: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' },
   th: { padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--border)', background: 'var(--surface2)', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' },
@@ -210,7 +213,9 @@ const S = {
   backdrop: (open) => ({ position: 'fixed', inset: 0, background: 'var(--backdrop)', zIndex: 99, opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none', transition: 'opacity 0.2s' }),
   btn: { padding: '8px 16px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500, fontFamily: 'inherit' },
   filterBtn: (active) => ({ padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`, background: active ? 'var(--accent)' : 'var(--surface2)', color: active ? '#fff' : 'var(--text2)', transition: 'all 0.15s' }),
-  searchBox: { background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, padding: '7px 12px', color: 'var(--text)', fontSize: 13, width: 240, outline: 'none', fontFamily: 'inherit' },
+  // No width here — .search-box (240px → 100% on mobile) supplies it, and the
+  // sort select overrides it inline with width:'auto'.
+  searchBox: { background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, padding: '7px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', fontFamily: 'inherit' },
   dropdown: { position: 'absolute', top: 'calc(100% + 4px)', right: 0, minWidth: 260, maxHeight: 320, overflowY: 'auto', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 8, boxShadow: '0 10px 30px var(--backdrop)', zIndex: 40, padding: 4 },
   dropRow: { display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '7px 10px', border: 'none', background: 'none', color: 'var(--text)', fontSize: 12, fontFamily: 'inherit', textAlign: 'left', cursor: 'pointer', borderRadius: 5 },
   segWrap: { display: 'inline-flex', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', background: 'var(--surface2)' },
@@ -517,9 +522,9 @@ export default function Dashboard() {
   const vendorOptions = vendorQuery ? allVendors.filter(v => v.toLowerCase().includes(vendorQuery.toLowerCase())) : allVendors;
 
   return (
-    <div style={S.app}>
+    <div className="dash">
       {/* HEADER */}
-      <header style={S.header}>
+      <header className="dash-header">
         <div style={S.logoBox}>
           <div style={S.logoMark}>MA</div>
           <div>
@@ -527,7 +532,7 @@ export default function Dashboard() {
             <span style={{ color: 'var(--text3)', fontSize: 13 }}>Mosaic Wellness</span>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="header-actions">
           <button
             type="button"
             onClick={toggleTheme}
@@ -548,7 +553,7 @@ export default function Dashboard() {
 
           <button type="button" onClick={openAdd} style={{ ...S.btn, background: 'var(--surface2)', border: '1px solid var(--border2)', color: 'var(--text)' }}>+ Add Data</button>
           <button type="button" onClick={exportCSV} style={{ ...S.btn, background: 'var(--accent)', color: '#fff' }}>↓ Export CSV</button>
-          <div style={S.totalBadge}>
+          <div className="total-badge" style={S.totalBadge}>
             <div style={{ fontSize: 11, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>Total Recoverable</div>
             <div className="mono" style={{ fontSize: 22, fontWeight: 700, color: 'var(--red)', marginTop: 2 }}>{fmt(sum.totalRecovery)}</div>
           </div>
@@ -556,7 +561,7 @@ export default function Dashboard() {
       </header>
 
       {/* KPIs */}
-      <div style={S.kpiRow}>
+      <div className="kpi-row">
         {[
           { label: 'Invoices Audited', value: fmtN(sum.totalInvoices), sub: `${fmtN(sum.totalLines)} line items processed` },
           { label: 'Flagged Invoices', value: fmtN(sum.flaggedInvoices), sub: `${pctOf(sum.flaggedInvoices, sum.totalInvoices).toFixed(1)}% of total`, color: 'var(--red)' },
@@ -572,7 +577,7 @@ export default function Dashboard() {
       </div>
 
       {/* CATEGORY CARDS */}
-      <div style={S.catGrid}>
+      <div className="cat-grid">
         {CAT_ORDER.filter(c => cats[c]).map(c => (
           <div key={c} style={S.catCard(catFilters.includes(c))} onClick={() => toggleCat(c)}>
             <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>{CAT_LABELS[c]}</div>
@@ -585,7 +590,7 @@ export default function Dashboard() {
       </div>
 
       {/* VENDOR CHART + SUMMARY */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 20, marginBottom: 28 }}>
+      <div className="split">
         <div style={S.tableWrap}>
           <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
             <h3 style={{ fontSize: 14, fontWeight: 600 }}>Leakage by Vendor</h3>
@@ -601,13 +606,14 @@ export default function Dashboard() {
                   type="button"
                   onClick={() => focusVendor(v)}
                   title={`Filter explorer to ${v}`}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, marginBottom: 6, width: '100%', padding: '2px 4px', border: 'none', borderRadius: 5, background: selected ? 'var(--accent-bg)' : 'none', color: 'inherit', fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left' }}
+                  className="vbar"
+                  style={{ background: selected ? 'var(--accent-bg)' : 'none' }}
                 >
-                  <span style={{ width: 170, color: selected ? 'var(--accent)' : 'var(--text2)', fontWeight: selected ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v}</span>
-                  <span style={{ flex: 1, height: 22, background: 'var(--surface2)', borderRadius: 4, overflow: 'hidden' }}>
+                  <span className="vbar-name" style={{ color: selected ? 'var(--accent)' : 'var(--text2)', fontWeight: selected ? 600 : 400 }}>{v}</span>
+                  <span className="vbar-track">
                     <span style={{ display: 'block', height: '100%', width: `${(amt / maxVI * 100).toFixed(1)}%`, background: CAT_COLORS.DUPLICATE, opacity: selected ? 0.95 : 0.7, borderRadius: 4, transition: 'width 0.5s ease' }} />
                   </span>
-                  <span className="mono" style={{ width: 180, textAlign: 'right', fontWeight: 600, fontSize: 12, color: 'var(--red)' }}>
+                  <span className="vbar-amt mono" style={{ color: 'var(--red)' }}>
                     {fmt(amt)} <span style={{ color: 'var(--text3)', fontWeight: 500 }}>({share.toFixed(2)}%)</span>
                   </span>
                 </button>
@@ -641,12 +647,13 @@ export default function Dashboard() {
 
       {/* INVOICE EXPLORER */}
       <div style={S.tableWrap} ref={explorerRef}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)', gap: 12, flexWrap: 'wrap' }}>
+        <div className="explorer-head">
           <h3 style={{ fontSize: 14, fontWeight: 600 }}>Invoice Explorer <span style={{ color: 'var(--text3)', fontSize: 12, fontWeight: 400 }}>({filtered.length} results)</span></h3>
 
           {/* Search + invoice-ID autocomplete */}
-          <div ref={searchRef} style={{ position: 'relative' }}>
+          <div ref={searchRef} className="search-wrap">
             <input
+              className="search-box"
               style={S.searchBox}
               placeholder="Search invoice ID or vendor…"
               value={search}
@@ -664,7 +671,7 @@ export default function Dashboard() {
               >✕</button>
             )}
             {searchOpen && searchMatches.length > 0 && (
-              <div style={{ ...S.dropdown, width: 340, left: 'auto', right: 0 }} role="listbox">
+              <div className="drop" style={{ ...S.dropdown, width: 340, left: 'auto', right: 0 }} role="listbox">
                 <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5, padding: '6px 10px' }}>
                   {searchMatches.length === 40 ? 'First 40 matches' : `${searchMatches.length} match${searchMatches.length > 1 ? 'es' : ''}`} — click to open
                 </div>
@@ -690,14 +697,14 @@ export default function Dashboard() {
         </div>
 
         {/* FILTER BAR — categories and vendors are both multi-select */}
-        <div style={{ display: 'flex', gap: 8, padding: '12px 20px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="filter-bar">
           <button style={S.filterBtn(catFilters.length === 0)} onClick={() => toggleCat(null)}>All Categories</button>
           {CAT_ORDER.filter(c => cats[c]).map(c => (
             <button key={c} style={S.filterBtn(catFilters.includes(c))} onClick={() => toggleCat(c)} aria-pressed={catFilters.includes(c)}>
               {catFilters.includes(c) ? '✓ ' : ''}{CAT_LABELS[c]}
             </button>
           ))}
-          <span style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 4px' }} />
+          <span className="bar-sep" style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 4px' }} />
 
           <div ref={vendorRef} style={{ position: 'relative' }}>
             <button
@@ -710,7 +717,7 @@ export default function Dashboard() {
               <span aria-hidden="true">▾</span>
             </button>
             {vendorOpen && (
-              <div style={{ ...S.dropdown, left: 0, right: 'auto', width: 300 }}>
+              <div className="drop" style={{ ...S.dropdown, left: 0, right: 'auto', width: 300 }}>
                 <input
                   autoFocus
                   value={vendorQuery}
@@ -738,7 +745,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          <span style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 4px' }} />
+          <span className="bar-sep" style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 4px' }} />
 
           {/* Explicit sort control — mirrors the clickable column headers for
               anyone who does not think to click them. */}
@@ -771,8 +778,10 @@ export default function Dashboard() {
           )}
         </div>
 
+        {/* Below 640px .data-table restyles these rows as stacked cards, using
+            each cell's data-label as its heading — see globals.css. */}
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
                 {SORT_COLUMNS.map(col => {
@@ -800,7 +809,7 @@ export default function Dashboard() {
             <tbody>
               {pageInvs.map(inv => (
                 <tr key={inv.id} onClick={() => setDetailId(inv.id)} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.1s' }} onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)'; }} onMouseLeave={e => { e.currentTarget.style.background = ''; }}>
-                  <td style={{ ...S.td, fontSize: 12 }}>
+                  <td data-label="Invoice ID" style={{ ...S.td, fontSize: 12 }}>
                     <button
                       type="button"
                       className="mono"
@@ -809,16 +818,16 @@ export default function Dashboard() {
                     >{inv.id}</button>
                     {inv.userAdded && <span style={S.tag('var(--accent-bg)', 'var(--accent)')}>&nbsp;SESSION</span>}
                   </td>
-                  <td style={S.td}>{inv.vendor}</td>
-                  <td style={{ ...S.td, color: 'var(--text3)' }}>{new Date(inv.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                  <td style={S.td}>{inv.cats.length > 0 ? inv.cats.map(c => <span key={c} style={S.tag(CAT_BG[c], CAT_COLORS[c])}>{c}</span>) : <span style={{ color: 'var(--text3)' }}>—</span>}</td>
-                  <td className="mono" style={{ ...S.td, textAlign: 'right', color: 'var(--text3)' }}>{fmt(inv.total)}</td>
-                  <td className="mono" style={{ ...S.td, textAlign: 'right', color: inv.impact > 0 ? 'var(--red)' : 'var(--text3)', fontWeight: inv.impact > 0 ? 700 : 400 }}>{inv.impact > 0 ? fmt(inv.impact) : '—'}</td>
-                  <td className="mono" style={{ ...S.td, textAlign: 'right', color: inv.impact > 0 ? 'var(--red)' : 'var(--text3)' }}>{inv.impact > 0 ? `${inv.pct.toFixed(2)}%` : '—'}</td>
+                  <td data-label="Vendor" style={S.td}>{inv.vendor}</td>
+                  <td data-label="Date" style={{ ...S.td, color: 'var(--text3)' }}>{new Date(inv.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                  <td data-label="Issues" style={S.td}>{inv.cats.length > 0 ? inv.cats.map(c => <span key={c} style={S.tag(CAT_BG[c], CAT_COLORS[c])}>{c}</span>) : <span style={{ color: 'var(--text3)' }}>—</span>}</td>
+                  <td data-label="Billed" className="mono" style={{ ...S.td, textAlign: 'right', color: 'var(--text3)' }}>{fmt(inv.total)}</td>
+                  <td data-label="Recovery" className="mono" style={{ ...S.td, textAlign: 'right', color: inv.impact > 0 ? 'var(--red)' : 'var(--text3)', fontWeight: inv.impact > 0 ? 700 : 400 }}>{inv.impact > 0 ? fmt(inv.impact) : '—'}</td>
+                  <td data-label="Recovery %" className="mono" style={{ ...S.td, textAlign: 'right', color: inv.impact > 0 ? 'var(--red)' : 'var(--text3)' }}>{inv.impact > 0 ? `${inv.pct.toFixed(2)}%` : '—'}</td>
                 </tr>
               ))}
               {pageInvs.length === 0 && (
-                <tr><td colSpan={7} style={{ ...S.td, textAlign: 'center', color: 'var(--text3)', padding: '32px 16px' }}>No invoices match the current filters.</td></tr>
+                <tr><td colSpan={7} className="empty-cell" style={{ ...S.td, textAlign: 'center', color: 'var(--text3)', padding: '32px 16px' }}>No invoices match the current filters.</td></tr>
               )}
             </tbody>
             {/* Totals reflect the full filtered selection, not just this page */}
@@ -833,14 +842,14 @@ export default function Dashboard() {
           </table>
         </div>
 
-        <div style={{ padding: '10px 20px', background: 'var(--surface2)', borderTop: '1px solid var(--border)', fontSize: 13, fontWeight: 600 }}>
+        <div className="totals-strip" style={{ padding: '10px 20px', background: 'var(--surface2)', borderTop: '1px solid var(--border)', fontSize: 13, fontWeight: 600 }}>
           <span style={{ color: 'var(--text2)' }}>Showing totals for {fmtN(totals.count)} invoices: </span>
           <span>Billed <span className="mono">{fmt(totals.billed)}</span></span>
           <span style={{ color: 'var(--text3)' }}> | </span>
           <span style={{ color: 'var(--red)' }}>Recovery <span className="mono">{fmt(totals.recovery)}</span> ({totals.pct.toFixed(2)}%)</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderTop: '1px solid var(--border)' }}>
+        <div className="pager">
           <div style={{ fontSize: 12, color: 'var(--text3)' }}>Showing {filtered.length === 0 ? 0 : (safePage - 1) * perPage + 1}–{Math.min(safePage * perPage, filtered.length)} of {filtered.length}</div>
           <div style={{ display: 'flex', gap: 4 }}>
             <button style={{ ...S.btn, padding: '5px 10px', fontSize: 12, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', opacity: safePage <= 1 ? 0.3 : 1 }} disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>‹ Prev</button>
@@ -860,12 +869,12 @@ export default function Dashboard() {
 
       {/* DETAIL PANEL */}
       <div style={S.backdrop(!!detailId)} onClick={() => setDetailId(null)} />
-      <div style={S.overlay(!!detailId)}>
+      <div className="detail-panel" style={S.overlay(!!detailId)}>
         {detailInv && (
           <>
             <div style={{ padding: 20, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, position: 'sticky', top: 0, background: 'var(--surface)', zIndex: 1 }}>
               <h2 style={{ fontSize: 16, fontWeight: 600 }}>{detailInv.id} <span style={{ color: 'var(--text3)', fontSize: 13, fontWeight: 400 }}>— {detailInv.vendor}</span></h2>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div className="panel-actions">
                 <button onClick={() => openEdit(detailInv)} style={{ ...S.btn, background: 'var(--accent)', color: '#fff', padding: '6px 12px' }}>✎ Edit</button>
                 <button onClick={() => setDetailId(null)} style={{ ...S.btn, background: 'none', border: '1px solid var(--border)', color: 'var(--text2)', padding: '6px 10px' }}>✕ Close</button>
               </div>
@@ -874,7 +883,7 @@ export default function Dashboard() {
               {/* Overview */}
               <div style={{ marginBottom: 24 }}>
                 <h4 style={S.sectionH}>Invoice Overview</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="detail-grid">
                   {[
                     ['Vendor', detailInv.vendor], ['Type', String(detailInv.type).replace('_', ' ')],
                     ['Date', new Date(detailInv.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })],
@@ -916,7 +925,7 @@ export default function Dashboard() {
                       <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.5 }}>{renderExpl(f.explanation, fmt)}</div>
                       {f.financialImpact > 0 && <div className="mono" style={{ fontSize: 16, fontWeight: 700, color: 'var(--red)', marginTop: 6 }}>{fmt(f.financialImpact)}</div>}
                       {f.expected != null && f.category !== 'DUPLICATE' && (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginTop: 8, fontSize: 12 }}>
+                        <div className="finding-grid">
                           <div><span style={{ color: 'var(--text3)' }}>Expected</span><br /><strong className="mono">{f.category === 'GST' ? `${f.expected}%` : fmt(f.expected)}</strong></div>
                           <div><span style={{ color: 'var(--text3)' }}>Actual</span><br /><strong className="mono">{f.category === 'GST' ? `${f.actual}%` : fmt(f.actual)}</strong></div>
                           <div><span style={{ color: 'var(--text3)' }}>Variance</span><br /><strong className="mono" style={{ color: f.variance > 0 ? 'var(--red)' : 'var(--green)' }}>{f.category === 'GST' ? `${f.variance > 0 ? '+' : ''}${f.variance}%` : `${f.variance > 0 ? '+' : ''}${fmt(f.variance)}`}</strong></div>
@@ -956,7 +965,7 @@ export default function Dashboard() {
         <>
           <div style={{ ...S.backdrop(true), zIndex: 199 }} onClick={() => setModalOpen(false)} />
           <div
-            style={S.modalWrap}
+            className="modal-wrap" style={S.modalWrap}
             role="dialog"
             aria-modal="true"
             aria-label={editingId ? 'Update invoice' : 'Add invoice'}
@@ -1007,7 +1016,7 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr 1fr', gap: 12, marginBottom: 20 }}>
+                  <div className="form-grid-3">
                     <div>
                       <label style={S.label} htmlFor="f-id">Invoice ID *</label>
                       {/* Locked while editing: re-keying the ID would leave the
@@ -1045,7 +1054,7 @@ export default function Dashboard() {
                             <button type="button" onClick={() => setForm(f => ({ ...f, lines: f.lines.filter((_, i) => i !== idx) }))} style={{ ...S.btn, background: 'none', border: '1px solid var(--red-border)', color: 'var(--red)', padding: '3px 8px', fontSize: 11 }}>Remove</button>
                           )}
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                        <div className="line-grid-2">
                           <div>
                             <label style={S.label}>Description *</label>
                             <select
@@ -1068,7 +1077,7 @@ export default function Dashboard() {
                               <input style={{ ...S.input, marginTop: 6 }} value={li.customDesc} onChange={e => setLine(idx, { customDesc: e.target.value })} placeholder="Custom description" />
                             )}
                           </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                          <div className="line-grid-2" style={{ marginBottom: 0 }}>
                             <div>
                               <label style={S.label}>Quantity *</label>
                               <input type="number" step="any" style={S.input} value={li.quantity} onChange={e => setLine(idx, { quantity: e.target.value })} />
@@ -1079,7 +1088,7 @@ export default function Dashboard() {
                             </div>
                           </div>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                        <div className="line-grid-3">
                           <div>
                             <label style={S.label}>Amount (auto)</label>
                             <input
@@ -1105,7 +1114,7 @@ export default function Dashboard() {
                   <button type="button" onClick={() => setForm(f => ({ ...f, lines: [...f.lines, blankLine()] }))} style={{ ...S.btn, background: 'var(--surface2)', border: '1px dashed var(--border2)', color: 'var(--text2)', width: '100%', marginBottom: 20 }}>+ Add line item</button>
 
                   <h4 style={S.sectionH}>Totals — auto-calculated, editable</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
+                  <div className="line-grid-3" style={{ marginBottom: 20 }}>
                     <div>
                       <label style={S.label}>Subtotal</label>
                       <input type="number" step="any" style={S.input} value={shownSubtotal} onChange={e => setForm(f => ({ ...f, subtotal: e.target.value, subtotalTouched: true }))} />
@@ -1136,7 +1145,7 @@ export default function Dashboard() {
 
       {/* TOAST */}
       {toast && (
-        <div style={S.toast} role="status">
+        <div className="toast-card" style={S.toast} role="status">
           <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
             <span style={{ color: 'var(--green)', fontWeight: 700 }}>✓</span>
             <span style={{ color: 'var(--text2)' }}>{toast}</span>

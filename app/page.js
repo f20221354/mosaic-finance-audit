@@ -148,6 +148,26 @@ const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
 const pctOf = (part, whole) => (whole > 0 ? (part / whole) * 100 : 0);
 
+// ---- date helpers for the range slicer ----
+// Invoice dates are ISO 'YYYY-MM-DD' strings, so range membership is a plain
+// string comparison: exact, and immune to the timezone shifts that Date parsing
+// would introduce. Day numbers are only used to drive the slider's integer
+// track, and convert back through UTC so they never drift by a day.
+const DAY_MS = 86400000;
+const isoToDay = (iso) => Math.round(Date.parse(`${iso}T00:00:00Z`) / DAY_MS);
+const dayToIso = (d) => new Date(d * DAY_MS).toISOString().slice(0, 10);
+const shiftIso = (iso, days) => dayToIso(isoToDay(iso) + days);
+const clampIso = (iso, lo, hi) => (iso < lo ? lo : iso > hi ? hi : iso);
+const fmtDate = (iso) => new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+// Quarter boundaries, used to offer Q1–Q4 presets for each year in the data.
+const QUARTERS = [
+  { label: 'Q1', from: '01-01', to: '03-31' },
+  { label: 'Q2', from: '04-01', to: '06-30' },
+  { label: 'Q3', from: '07-01', to: '09-30' },
+  { label: 'Q4', from: '10-01', to: '12-31' },
+];
+
 // Category hues resolve through CSS custom properties so each theme gets its own
 // validated step — the dark values are too light to hold contrast as text on a
 // white card. See the token block in globals.css.
@@ -241,7 +261,65 @@ export default function Dashboard() {
   }, [overrides]);
   const overrideIds = useMemo(() => new Set(overrides.keys()), [overrides]);
 
+  // The audit always runs over the COMPLETE dataset, never the date-filtered
+  // subset. Duplicate detection works by matching an invoice against its earlier
+  // twin, so auditing a slice would make the duplicate finding — the single
+  // largest recovery category — disappear whenever a range cut the pair apart.
+  // The date range is applied afterwards, to aggregation only.
   const data = useMemo(() => computeAudit(workingInvoices, overrideIds), [workingInvoices, overrideIds]);
+
+  // Declared here, above the `from`/`to` derivation that reads it — a later
+  // `const` would be in its temporal dead zone at that point.
+  // null means "all time" rather than the concrete bounds, so adding an invoice
+  // outside the current span widens the range instead of hiding the new record.
+  const [range, setRange] = useState(null);
+
+  // Widest selectable span, recomputed so a session invoice dated outside the
+  // shipped data still lands inside the slicer.
+  const [dataMin, dataMax] = useMemo(() => {
+    const ds = workingInvoices.map(i => i.invoice_date).filter(Boolean).sort();
+    return ds.length ? [ds[0], ds[ds.length - 1]] : ['2025-01-01', '2025-12-31'];
+  }, [workingInvoices]);
+
+  const from = clampIso(range?.from ?? dataMin, dataMin, dataMax);
+  const to = clampIso(range?.to ?? dataMax, dataMin, dataMax);
+  const isFullRange = from === dataMin && to === dataMax;
+
+  // Every visual on the page reads from `view`, so the slicer governs the whole
+  // dashboard the way a Power BI slicer governs a report page. Findings are kept
+  // if their invoice falls in range; the categories, KPI counts and totals are
+  // then recomputed from that subset.
+  const view = useMemo(() => {
+    const invoices = data.invoices.filter(i => i.date >= from && i.date <= to);
+    const ids = new Set(invoices.map(i => i.id));
+    const findings = data.findings.filter(f => ids.has(f.invoiceId));
+
+    const cats = {};
+    for (const f of findings) {
+      if (!cats[f.category]) cats[f.category] = { total: 0, count: 0 };
+      cats[f.category].count++;
+      cats[f.category].total += f.financialImpact;
+    }
+    const gt = Object.values(cats).reduce((s, c) => s + c.total, 0);
+    for (const c of Object.values(cats)) {
+      c.total = round2(c.total);
+      c.pct = gt > 0 ? Math.round((c.total / gt) * 10000) / 100 : 0;
+    }
+    const flagged = new Set(findings.filter(f => f.financialImpact > 0).map(f => f.invoiceId));
+
+    return {
+      invoices,
+      findings,
+      cats,
+      summary: {
+        totalInvoices: invoices.length,
+        totalLines: invoices.reduce((s, i) => s + i.lines.length, 0),
+        flaggedInvoices: flagged.size,
+        totalFindings: findings.length,
+        totalRecovery: round2(gt),
+      },
+    };
+  }, [data, from, to]);
 
   const [catFilters, setCatFilters] = useState([]);
   const [vendorFilters, setVendorFilters] = useState([]);
@@ -284,9 +362,12 @@ export default function Dashboard() {
     setTheme(next);
   }, []);
 
-  const { summary: sum, findings, invoices } = data;
-  const cats = sum.categories;
-  const allVendors = useMemo(() => [...new Set(invoices.map(i => i.vendor))].sort(), [invoices]);
+  // Date-scoped, for every visual. `data.*` remains available for the few places
+  // that must see the whole dataset regardless of the slicer.
+  const { summary: sum, findings, invoices, cats } = view;
+  // The vendor checklist is built from the full dataset so options never vanish
+  // mid-selection when the range narrows.
+  const allVendors = useMemo(() => [...new Set(data.invoices.map(i => i.vendor))].sort(), [data.invoices]);
 
   // --- Add / Update Data modal ---
   const [modalOpen, setModalOpen] = useState(false);
@@ -323,13 +404,17 @@ export default function Dashboard() {
     return { count: filtered.length, billed, recovery, pct: pctOf(recovery, billed) };
   }, [filtered]);
 
-  // Autocomplete runs over every invoice, not just the flagged subset, so any
-  // invoice ID the user types can be opened straight from the box.
+  // Autocomplete runs over every invoice — not just the flagged subset, and not
+  // just the date range — so any invoice ID the user types can be opened from the
+  // box. Matches outside the selected range are marked rather than hidden.
   const searchMatches = useMemo(() => {
     const s = search.trim().toLowerCase();
     if (!s) return [];
-    return invoices.filter(i => i.id.toLowerCase().includes(s) || i.vendor.toLowerCase().includes(s)).slice(0, 40);
-  }, [invoices, search]);
+    return data.invoices
+      .filter(i => i.id.toLowerCase().includes(s) || i.vendor.toLowerCase().includes(s))
+      .slice(0, 40)
+      .map(i => ({ ...i, outOfRange: i.date < from || i.date > to }));
+  }, [data.invoices, search, from, to]);
 
   const handleSort = useCallback((key) => {
     setSortKey(prev => {
@@ -349,6 +434,44 @@ export default function Dashboard() {
   }, []);
 
   const toggleSortDir = useCallback(() => { setSortDir(d => d * -1); setPage(1); }, []);
+
+  const applyRange = useCallback((f, t) => {
+    setRange({ from: f, to: t });
+    setPage(1);
+  }, []);
+
+  const resetRange = useCallback(() => { setRange(null); setPage(1); }, []);
+
+  // Relative presets are anchored to the LATEST INVOICE, not to today. The
+  // dataset ends in Dec 2025, so "last 90 days" measured from the current date
+  // would select nothing at all.
+  const presets = useMemo(() => {
+    const out = [{ label: 'All time', from: dataMin, to: dataMax, hint: `Every invoice — ${fmtDate(dataMin)} to ${fmtDate(dataMax)}` }];
+    for (const [label, days] of [['Last 30d', 30], ['Last 90d', 90], ['Last 6m', 182]]) {
+      out.push({
+        label,
+        from: clampIso(shiftIso(dataMax, -(days - 1)), dataMin, dataMax),
+        to: dataMax,
+        hint: `${days} days up to the latest invoice (${fmtDate(dataMax)}) — relative to the data, not today`,
+      });
+    }
+    const years = [...new Set([dataMin.slice(0, 4), dataMax.slice(0, 4)])].sort();
+    for (const y of years) {
+      for (const q of QUARTERS) {
+        const qf = `${y}-${q.from}`;
+        const qt = `${y}-${q.to}`;
+        // Skip quarters with no data behind them.
+        if (qt < dataMin || qf > dataMax) continue;
+        out.push({
+          label: years.length > 1 ? `${q.label} ${y}` : q.label,
+          from: clampIso(qf, dataMin, dataMax),
+          to: clampIso(qt, dataMin, dataMax),
+          hint: `${q.label} ${y}: ${fmtDate(qf)} – ${fmtDate(qt)}`,
+        });
+      }
+    }
+    return out;
+  }, [dataMin, dataMax]);
 
   const toggleCat = useCallback((c) => {
     setCatFilters(prev => (c === null ? [] : prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]));
@@ -400,6 +523,8 @@ export default function Dashboard() {
     return () => clearTimeout(t);
   }, [toast]);
 
+  // Exports what the dashboard is currently showing, so the CSV honours the date
+  // slicer; the filename records the range to keep extracts self-describing.
   const exportCSV = useCallback(() => {
     const rows = [['Finding ID', 'Invoice', 'Vendor', 'Category', 'Status', 'Line Description', 'Expected', 'Actual', 'Variance', 'Financial Impact', 'Explanation', 'Suppressed']];
     findings.forEach(f => rows.push([f.id, f.invoiceId, f.vendor, f.category, f.status, f.lineDesc || '', f.expected ?? '', f.actual ?? '', f.variance ?? '', f.financialImpact, renderExpl(f.explanation, fmtFull), f.suppressed]));
@@ -407,9 +532,9 @@ export default function Dashboard() {
     const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'mosaic_audit_findings.csv';
+    a.download = isFullRange ? 'mosaic_audit_findings.csv' : `mosaic_audit_findings_${from}_to_${to}.csv`;
     a.click();
-  }, [findings]);
+  }, [findings, isFullRange, from, to]);
 
   // Vendor impact chart
   const vendorImpact = useMemo(() => {
@@ -422,8 +547,10 @@ export default function Dashboard() {
   const totalBilled = useMemo(() => invoices.reduce((s, i) => s + i.total, 0), [invoices]);
 
   // Detail
-  const detailInv = detailId ? invoices.find(i => i.id === detailId) : null;
-  const detailFindings = useMemo(() => (detailId ? findings.filter(f => f.invoiceId === detailId) : []), [findings, detailId]);
+  // Resolved against the full dataset, not the date-scoped view: an invoice found
+  // through search may sit outside the current range and must still open.
+  const detailInv = detailId ? data.invoices.find(i => i.id === detailId) : null;
+  const detailFindings = useMemo(() => (detailId ? data.findings.filter(f => f.invoiceId === detailId) : []), [data.findings, detailId]);
 
   // ====== FORM PLUMBING ======
   const openAdd = useCallback(() => {
@@ -554,11 +681,108 @@ export default function Dashboard() {
           <button type="button" onClick={openAdd} style={{ ...S.btn, background: 'var(--surface2)', border: '1px solid var(--border2)', color: 'var(--text)' }}>+ Add Data</button>
           <button type="button" onClick={exportCSV} style={{ ...S.btn, background: 'var(--accent)', color: '#fff' }}>↓ Export CSV</button>
           <div className="total-badge" style={S.totalBadge}>
-            <div style={{ fontSize: 11, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>Total Recoverable</div>
+            <div style={{ fontSize: 11, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>
+              Total Recoverable
+              {/* Never let a filtered figure be mistaken for the all-time total. */}
+              {!isFullRange && <span style={{ ...S.tag('var(--accent-bg)', 'var(--accent)'), marginLeft: 6, textTransform: 'none', letterSpacing: 0 }}>filtered</span>}
+            </div>
             <div className="mono" style={{ fontSize: 22, fontWeight: 700, color: 'var(--red)', marginTop: 2 }}>{fmt(sum.totalRecovery)}</div>
+            {!isFullRange && (
+              <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>{fmtDate(from)} – {fmtDate(to)}</div>
+            )}
           </div>
         </div>
       </header>
+
+      {/* DATE SLICER — governs every visual on the page, Power BI style */}
+      <section className="slicer" aria-label="Invoice date range">
+        <div className="slicer-top">
+          <div>
+            <div className="slicer-title">Invoice Date Range</div>
+            <div className="slicer-sub">
+              <strong style={{ color: 'var(--text)' }}>{fmtDate(from)}</strong> to <strong style={{ color: 'var(--text)' }}>{fmtDate(to)}</strong>
+              {' · '}
+              <strong style={{ color: sum.totalInvoices === 0 ? 'var(--red)' : 'var(--accent)' }}>{fmtN(sum.totalInvoices)}</strong> of {fmtN(data.invoices.length)} invoices in range
+            </div>
+          </div>
+          <div className="slicer-presets">
+            {presets.map(p => {
+              const on = from === p.from && to === p.to;
+              return (
+                <button key={p.label} type="button" title={p.hint} aria-pressed={on} style={S.filterBtn(on)} onClick={() => applyRange(p.from, p.to)}>{p.label}</button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="slicer-controls">
+          <input
+            type="date"
+            className="slicer-date"
+            aria-label="Range start date"
+            value={from}
+            min={dataMin}
+            max={to}
+            onChange={e => { const v = e.target.value; if (v) applyRange(clampIso(v, dataMin, to), to); }}
+          />
+          <span style={{ color: 'var(--text3)', fontSize: 12 }}>and</span>
+          <input
+            type="date"
+            className="slicer-date"
+            aria-label="Range end date"
+            value={to}
+            min={from}
+            max={dataMax}
+            onChange={e => { const v = e.target.value; if (v) applyRange(from, clampIso(v, from, dataMax)); }}
+          />
+          {!isFullRange && (
+            <button type="button" onClick={resetRange} style={{ ...S.filterBtn(false), marginLeft: 4 }}>✕ Reset to all time</button>
+          )}
+        </div>
+
+        {/* Dual-thumb track. Two overlaid range inputs: pointer events are enabled
+            on the thumbs only, and the z-order flips at the midpoint so the thumb
+            you need stays grabbable even when both sit on the same day. */}
+        {(() => {
+          const minD = isoToDay(dataMin);
+          const maxD = isoToDay(dataMax);
+          const fromD = isoToDay(from);
+          const toD = isoToDay(to);
+          const span = Math.max(1, maxD - minD);
+          const leftPct = ((fromD - minD) / span) * 100;
+          const rightPct = ((toD - minD) / span) * 100;
+          const fromOnTop = fromD > (minD + maxD) / 2;
+          return (
+            <div className="slicer-slider">
+              <span className="slicer-track" />
+              <span className="slicer-fill" style={{ left: `${leftPct}%`, width: `${Math.max(0, rightPct - leftPct)}%` }} />
+              <input
+                type="range" min={minD} max={maxD} step={1} value={fromD}
+                aria-label="Range start slider"
+                style={{ zIndex: fromOnTop ? 4 : 3 }}
+                onChange={e => { const v = Math.min(Number(e.target.value), toD); applyRange(dayToIso(v), to); }}
+              />
+              <input
+                type="range" min={minD} max={maxD} step={1} value={toD}
+                aria-label="Range end slider"
+                style={{ zIndex: fromOnTop ? 3 : 4 }}
+                onChange={e => { const v = Math.max(Number(e.target.value), fromD); applyRange(from, dayToIso(v)); }}
+              />
+            </div>
+          );
+        })()}
+
+        <div className="slicer-scale">
+          <span>{fmtDate(dataMin)}</span>
+          <span>{fmtDate(dataMax)}</span>
+        </div>
+
+        {sum.totalInvoices === 0 && (
+          <div style={{ marginTop: 10, background: 'var(--red-bg)', border: '1px solid var(--red-border)', borderRadius: 6, padding: '8px 12px', fontSize: 12, color: 'var(--text2)' }}>
+            No invoices fall in this range — every figure below reads zero. Widen the range or reset to all time.
+          </div>
+        )}
+      </section>
 
       {/* KPIs */}
       <div className="kpi-row">
@@ -688,6 +912,9 @@ export default function Dashboard() {
                   >
                     <span className="mono" style={{ width: 82, color: 'var(--accent)', fontWeight: 600 }}>{m.id}</span>
                     <span style={{ flex: 1, color: 'var(--text2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.vendor}</span>
+                    {/* Searchable beyond the slicer, but say so rather than implying
+                        it is part of the current selection. */}
+                    {m.outOfRange && <span style={{ fontSize: 10, color: 'var(--text3)', whiteSpace: 'nowrap' }} title={`Dated ${fmtDate(m.date)} — outside the selected range`}>off-range</span>}
                     <span className="mono" style={{ color: 'var(--text)', fontWeight: 600 }}>{fmt(m.total)}</span>
                   </button>
                 ))}
@@ -1157,6 +1384,7 @@ export default function Dashboard() {
       {/* FOOTER */}
       <footer style={{ textAlign: 'center', padding: '32px 0 16px', color: 'var(--text3)', fontSize: 12 }}>
         Mosaic Wellness Invoice Audit Intelligence — Deterministic engine · {fmtN(sum.totalInvoices)} invoices · {fmtN(sum.totalLines)} line items
+        {!isFullRange && <> · date range {fmtDate(from)} – {fmtDate(to)} of {fmtN(data.invoices.length)} audited</>}
         {overrides.size > 0 && <> · {overrides.size} session record{overrides.size === 1 ? '' : 's'}</>}
         {userEmail && <div style={{ marginTop: 4, opacity: 0.8 }}>Session: {userEmail}</div>}
       </footer>

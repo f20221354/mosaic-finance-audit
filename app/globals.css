@@ -344,6 +344,151 @@ body {
   margin-bottom: 28px;
 }
 
+/* ---------- date range slicer ----------
+   A Power BI style "between" slicer: two date fields plus a dual-thumb track,
+   governing every visual on the page. */
+.slicer {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px 14px;
+  margin-bottom: 24px;
+}
+.slicer-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.slicer-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.slicer-sub {
+  font-size: 13px;
+  color: var(--text2);
+  margin-top: 3px;
+}
+.slicer-presets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.slicer-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.slicer-date {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  color-scheme: inherit;
+}
+.slicer-date:focus-visible {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.slicer-slider {
+  position: relative;
+  height: 30px;
+  margin: 8px 2px 0;
+}
+.slicer-track,
+.slicer-fill {
+  position: absolute;
+  top: 13px;
+  height: 4px;
+  border-radius: 2px;
+}
+.slicer-track {
+  left: 0;
+  right: 0;
+  background: var(--surface3);
+}
+.slicer-fill {
+  background: var(--accent);
+}
+/* Both inputs span the full track and are invisible; only their thumbs accept
+   pointer events, so the lower input stays draggable through the upper one. */
+.slicer-slider input[type='range'] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 30px;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+}
+.slicer-slider input[type='range']::-webkit-slider-runnable-track {
+  height: 30px;
+  background: transparent;
+  border: none;
+}
+.slicer-slider input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  margin-top: 7px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  box-shadow: 0 1px 4px var(--backdrop);
+  cursor: grab;
+}
+.slicer-slider input[type='range']::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.12);
+}
+.slicer-slider input[type='range']::-moz-range-track {
+  height: 30px;
+  background: transparent;
+  border: none;
+}
+.slicer-slider input[type='range']::-moz-range-thumb {
+  pointer-events: auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  box-shadow: 0 1px 4px var(--backdrop);
+  cursor: grab;
+}
+.slicer-slider input[type='range']:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.slicer-slider input[type='range']:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.slicer-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text3);
+}
+
 /* Chart on the left, audit summary in a fixed rail on the right. */
 .split {
   display: grid;
@@ -559,6 +704,15 @@ body {
     font-size: 11px;
   }
 
+  .slicer {
+    padding: 14px 12px 12px;
+    margin-bottom: 18px;
+  }
+  /* Date fields share the row evenly instead of one shrinking to nothing. */
+  .slicer-date {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
   .filter-bar {
     padding: 10px 12px;
   }
